@@ -7,11 +7,16 @@ on:
 
 jobs:
   build:
-    runs-on: macos-11
+    name: Building on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-12, ubuntu-latest]
+
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: graalvm/setup-graalvm@v1
         with:
           version: 'latest'
@@ -22,8 +27,11 @@ jobs:
       - run: cp src/tools/upx /usr/local/bin
       - name: Build
         run: ./mvnw clean package -DskipTests -Pnative
-      - run: mv target/provisio-tools-*-runner target/provisio-Darwin-x86_64
+      - if: ${{ matrix.os  == "macos-12"}}
+        run: mv target/provisio-tools-*-runner target/provisio-Darwin-x86_64
+      - if: ${{ matrix.os  == "ubuntu-latest"}}
+        run: mv target/provisio-tools-*-runner "target/provisio-linux-x86_64"
       - uses: ncipollo/release-action@v1
         with:
-          artifacts: "target/provisio-Darwin-x86_64"
+          artifacts: "target/provisio-Darwin-x86_64,target/provisio-linux-x86_64"
           token: ${{ secrets.GITHUB_TOKEN }}
